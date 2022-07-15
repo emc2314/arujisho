@@ -1,26 +1,18 @@
 # arujisho
 
-辞書です
 
-## Getting Started
+[![Codemagic build status](https://api.codemagic.io/apps/62d0c7c9b2128b2e5dbb1002/62d0c7c9b2128b2e5dbb1001/status_badge.svg)](https://codemagic.io/apps/62d0c7c9b2128b2e5dbb1002/62d0c7c9b2128b2e5dbb1001/latest_build) 
 
-This project is a starting point for a Flutter application.
+日本語辞書です
 
-A few resources to get you started if this is your first Flutter project:
+<img src="https://user-images.githubusercontent.com/14357110/179152000-e9ff1cbe-7ae7-4b8f-b754-20931804f5c7.png" width="300">
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-# TODO
+## TODO
 - clear button
-- free LIKE query
+- sql LIKE query
 - easy selectable text
-- ginza word seperate
+- sentence segmentation based on NLP model
 - hatsuon link
-- iOS support
 - dic sequences
 - return to expanded tile
+- floating word title
