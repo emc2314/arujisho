@@ -16,3 +16,4 @@
 - dic sequences
 - return to expanded tile
 - floating word title
+- optimize database asset init
