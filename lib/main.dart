@@ -93,6 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _controller = TextEditingController();
   final StreamController _streamController = StreamController();
   final List<String> _history = [''];
+  int _searchMode = 0;
   Timer? _debounce;
   static Database? _db;
   Future<Database> get database async {
@@ -118,11 +119,12 @@ class _MyHomePageState extends State<MyHomePage> {
     return _db!;
   }
 
-  _search() {
+  _search(int mode) {
     if (_controller.text.isEmpty) {
       _streamController.add(null);
       return;
     }
+    _searchMode = mode;
     _streamController.add(_controller.text);
   }
 
@@ -143,8 +145,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _controller.addListener(() {
       if (_debounce?.isActive ?? false) return;
       _debounce = Timer(const Duration(milliseconds: 300), () {
-        _search();
+        _search(0);
       });
+      setState(() {});
     });
     ClipboardListener.addListener(_cpListener);
   }
@@ -174,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> {
           appBar: AppBar(
             title: const Text("ある辞書"),
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(48.0),
+              preferredSize: const Size.fromHeight(36.0),
               child: Row(
                 children: <Widget>[
                   Expanded(
@@ -182,25 +185,35 @@ class _MyHomePageState extends State<MyHomePage> {
                       margin: const EdgeInsets.only(left: 12.0, bottom: 8.0),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(24.0),
+                        borderRadius: BorderRadius.circular(20.0),
                       ),
                       child: TextFormField(
                         controller: _controller,
-                        decoration: const InputDecoration(
+                        textAlignVertical: TextAlignVertical.center,
+                        decoration: InputDecoration(
                           hintText: "調べたい言葉をご入力してください",
-                          contentPadding: EdgeInsets.only(left: 24.0),
+                          contentPadding: const EdgeInsets.all(12.0),
                           border: InputBorder.none,
+                          suffixIcon: _controller.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    setState(() => _controller.clear());
+                                  },
+                                ),
                         ),
                       ),
                     ),
                   ),
                   IconButton(
+                    padding: const EdgeInsets.only(bottom: 8.0),
                     icon: const Icon(
-                      Icons.search,
+                      Icons.format_line_spacing,
                       color: Colors.white,
                     ),
                     onPressed: () {
-                      _search();
+                      _search(1);
                     },
                   )
                 ],
@@ -217,51 +230,107 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Text("ご参考になりましたら幸いです"),
                       );
                     }
-                    Future<List<Map>> requestItems(int nextIndex) async {
+                    Future<List<Map>> queryAuto(int nextIndex) async {
                       Database db = await database;
-                      String searchField = '';
                       const pageSize = 35;
+                      String searchField = 'word';
+                      String method = "MATCH";
+                      List<Map> result = <Map>[];
                       if (snapshot.data
                           .toLowerCase()
                           .contains(RegExp(r'^[a-z]+$'))) {
                         searchField = 'romaji';
                       } else if (snapshot.data.contains(RegExp(r'^[ぁ-ゖー]+$'))) {
                         searchField = 'yomikata';
-                      } else {
-                        searchField = 'word';
+                      } else if (snapshot.data
+                          .contains(RegExp(r'[\.\+\[\]\*\^\$]'))) {
+                        method = 'REGEXP';
+                      } else if (snapshot.data.contains(RegExp(r'[_%]'))) {
+                        method = 'LIKE';
                       }
-                      List<Map> result = List.of(await db.rawQuery(
-                        'SELECT tt.word,tt.yomikata,tt.pitchData,tt.freqRank,tt.romaji,imis.imi,imis.orig '
-                        'FROM (imis JOIN (SELECT * FROM jpdc '
-                        'WHERE $searchField MATCH "${snapshot.data}*" OR r$searchField '
-                        'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*" '
-                        'ORDER BY _rowid_ LIMIT $nextIndex, $pageSize'
-                        ') AS tt ON tt.idex=imis._rowid_)',
-                      ));
-                      int balancedWeight(Map item) {
-                        return (item['freqRank'] *
-                                (item[searchField].startsWith(snapshot.data)
-                                    ? 100
-                                    : 500) *
-                                pow(
-                                    item[searchField].length /
-                                        snapshot.data.length,
-                                    2))
-                            .round();
-                      }
+                      try {
+                        if (method == "MATCH") {
+                          result = List.of(await db.rawQuery(
+                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'FROM (imis JOIN (SELECT * FROM jpdc '
+                            'WHERE $searchField MATCH "${snapshot.data}*" OR r$searchField '
+                            'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*" '
+                            'ORDER BY _rowid_ LIMIT $nextIndex, $pageSize'
+                            ') AS tt ON tt.idex=imis._rowid_)',
+                          ));
+                        } else {
+                          result = List.of(await db.rawQuery(
+                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'FROM (imis JOIN (SELECT * FROM jpdc '
+                            'WHERE word $method "${snapshot.data}" '
+                            'OR yomikata $method "${snapshot.data}" '
+                            'OR romaji $method "${snapshot.data}" '
+                            'ORDER BY _rowid_ LIMIT $nextIndex, $pageSize'
+                            ') AS tt ON tt.idex=imis._rowid_)',
+                          ));
+                        }
+                        int balancedWeight(Map item, int bLen) {
+                          return (item['freqRank'] *
+                                  (item[searchField]
+                                              .startsWith(snapshot.data) &&
+                                          _searchMode == 0
+                                      ? 100
+                                      : 500) *
+                                  pow(item['romaji'].length / bLen,
+                                      _searchMode == 0 ? 2 : 0))
+                              .round();
+                        }
 
-                      result.sort((a, b) =>
-                          balancedWeight(a).compareTo(balancedWeight(b)));
-                      return result;
+                        int bLen = 1 << 31;
+                        for (var w in result) {
+                          if (w['word'].length < bLen) {
+                            bLen = w['word'].length;
+                          }
+                        }
+                        result.sort((a, b) => balancedWeight(a, bLen)
+                            .compareTo(balancedWeight(b, bLen)));
+                        return result;
+                      } catch (e) {
+                        return nextIndex == 0
+                            ? [
+                                {
+                                  'word': 'EXCEPTION',
+                                  'yomikata': '',
+                                  'pitchData': '',
+                                  'freqRank': -1,
+                                  'romaji': '',
+                                  'orig': 'EXCEPTION',
+                                  'imi': jsonEncode({
+                                    'Error': [e.toString()],
+                                    'Help': [
+                                      "LIKE 検索:\n"
+                                      "    _  任意の1文字\n"
+                                      "    %  任意の0文字以上の文字列\n"
+                                      "REGEX 検索:\n"
+                                      "    .  任意の1文字\n"
+                                      "    .*  任意の0文字以上の文字列\n"
+                                      "    .+  任意の1文字以上の文字列\n"
+                                      "    ^abc	前方一致。先頭がabcの文字列で始まる\n"
+                                      "    abc\$ 後方一致。末尾がabcの文字列で終わる\n"
+                                      "    [abc]	候補。a,b,cのいずれか1字"
+                                    ]
+                                  }),
+                                  'expanded': true
+                                }
+                              ]
+                            : [];
+                      }
                     }
 
                     return InfiniteList<Map>(
-                      onRequest: requestItems,
+                      onRequest: queryAuto,
                       itemBuilder: (context, item, index) {
                         Map<String, dynamic> imi = jsonDecode(item['imi']);
                         return ListTileTheme(
                             dense: true,
                             child: ExpansionTile(
+                              initiallyExpanded: item.containsKey('expanded') &&
+                                  item['expanded'],
                               title: Text(item['word'] == item['orig']
                                   ? item['word']
                                   : '${item['word']} →〔${item['orig']}〕'),
@@ -274,14 +343,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                         Container(
                                             decoration: BoxDecoration(
                                                 color: Colors.red[600],
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(20))),
+                                                borderRadius:
+                                                    const BorderRadius.all(
+                                                        Radius.circular(20))),
                                             child: Padding(
-                                                padding: EdgeInsets.fromLTRB(
-                                                    5, 0, 5, 0),
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        5, 0, 5, 0),
                                                 child: Text(
                                                   s,
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                       color: Colors.white),
                                                 ))),
                                       ] +
@@ -294,14 +365,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                                                 copy: true,
                                                                 selectAll:
                                                                     false))),
-                                                Divider(color: Colors.grey),
+                                                const Divider(
+                                                    color: Colors.grey),
                                               ])).reduce((a, b) => a + b))
                                   .reduce((a, b) => a + b),
                               onExpansionChanged: (_) =>
                                   FocusManager.instance.primaryFocus?.unfocus(),
                             ));
                       },
-                      key: ValueKey(snapshot.data),
+                      key: ValueKey('$snapshot.data $_searchMode'),
                     );
                   })),
         ));

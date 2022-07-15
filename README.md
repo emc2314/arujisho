@@ -8,8 +8,6 @@
 <img src="https://user-images.githubusercontent.com/14357110/179152000-e9ff1cbe-7ae7-4b8f-b754-20931804f5c7.png" width="300">
 
 ## TODO
-- clear button
-- sql LIKE query
 - easy selectable text
 - sentence segmentation based on NLP model
 - hatsuon link
@@ -17,3 +15,4 @@
 - return to expanded tile
 - floating word title
 - optimize database asset init
+- splash screen
