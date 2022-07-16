@@ -13,6 +13,8 @@
 - hatsuon link
 - dic sequences
 - return to expanded tile
-- floating word title
+- sticky header
 - optimize database asset init
 - splash screen
+- katakana/hiragana/kanji extension regex
+- merge same word

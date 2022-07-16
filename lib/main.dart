@@ -243,7 +243,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       } else if (snapshot.data.contains(RegExp(r'^[ぁ-ゖー]+$'))) {
                         searchField = 'yomikata';
                       } else if (snapshot.data
-                          .contains(RegExp(r'[\.\+\[\]\*\^\$]'))) {
+                          .contains(RegExp(r'[\.\+\[\]\*\^\$\?]'))) {
                         method = 'REGEXP';
                       } else if (snapshot.data.contains(RegExp(r'[_%]'))) {
                         method = 'LIKE';
