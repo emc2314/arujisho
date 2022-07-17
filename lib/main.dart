@@ -254,8 +254,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                     }
                     Future<List<Map>> queryAuto(int nextIndex) async {
-                      Database db = await database;
                       const pageSize = 35;
+                      if (nextIndex % pageSize != 0) {
+                        return [];
+                      }
+                      Database db = await database;
                       String searchField = 'word';
                       String method = "MATCH";
                       List<Map> result = <Map>[];
