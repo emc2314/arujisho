@@ -21,7 +21,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'ある辞書',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: Colors.pink[300],
+          secondary: Colors.pinkAccent[100],
+        ),
       ),
       home: const MyHomePage(),
     );
@@ -119,6 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _db = await openDatabase(path, readOnly: true);
     return _db!;
   }
+
   static JavascriptRuntime? _fjs;
   Future<JavascriptRuntime> get flutterJs async {
     if (_fjs != null) return _fjs!;
@@ -138,9 +142,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _searchMode = mode;
     JavascriptRuntime t = await flutterJs;
     String s = _controller.text;
-    s = s.replaceAll("\\pc","\\p{Han}");
-    s = s.replaceAll("\\ph","\\p{Hiragana}");
-    s = s.replaceAll("\\pk","\\p{Katakana}");
+    s = s.replaceAll("\\pc", "\\p{Han}");
+    s = s.replaceAll("\\ph", "\\p{Hiragana}");
+    s = s.replaceAll("\\pk", "\\p{Katakana}");
     s = t.evaluate('converter(${json.encode(s)})').stringResult;
     _streamController.add(s);
   }
@@ -195,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
           appBar: AppBar(
             title: const Text("ある辞書"),
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(36.0),
+              preferredSize: const Size.fromHeight(48.0),
               child: Row(
                 children: <Widget>[
                   Expanded(
@@ -203,19 +207,20 @@ class _MyHomePageState extends State<MyHomePage> {
                       margin: const EdgeInsets.only(left: 12.0, bottom: 8.0),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20.0),
+                        borderRadius: BorderRadius.circular(24.0),
                       ),
                       child: TextFormField(
                         controller: _controller,
                         textAlignVertical: TextAlignVertical.center,
                         decoration: InputDecoration(
                           hintText: "調べたい言葉をご入力してください",
-                          contentPadding: const EdgeInsets.all(12.0),
+                          contentPadding:
+                              const EdgeInsets.fromLTRB(20, 12, 12, 12),
                           border: InputBorder.none,
                           suffixIcon: _controller.text.isEmpty
                               ? null
                               : IconButton(
-                                  icon: const Icon(Icons.clear),
+                                  icon: const Icon(Icons.clear, size: 20),
                                   onPressed: () {
                                     setState(() => _controller.clear());
                                   },
@@ -227,7 +232,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   IconButton(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     icon: const Icon(
-                      Icons.format_line_spacing,
+                      Icons.filter_list,
                       color: Colors.white,
                     ),
                     onPressed: () {
@@ -366,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                       <Widget>[
                                         Container(
                                             decoration: BoxDecoration(
-                                                color: Colors.red[600],
+                                                color: Colors.blue[600],
                                                 borderRadius:
                                                     const BorderRadius.all(
                                                         Radius.circular(20))),
