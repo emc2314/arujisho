@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:clipboard_listener/clipboard_listener.dart';
+import 'package:flutter_js/flutter_js.dart';
 
 void main() => runApp(const MyApp());
 
@@ -118,14 +119,30 @@ class _MyHomePageState extends State<MyHomePage> {
     _db = await openDatabase(path, readOnly: true);
     return _db!;
   }
+  static JavascriptRuntime? _fjs;
+  Future<JavascriptRuntime> get flutterJs async {
+    if (_fjs != null) return _fjs!;
+    JavascriptRuntime t = getJavascriptRuntime();
+    String openccJS = await rootBundle.loadString("js/opencc.js");
+    t.evaluate(openccJS);
+    t.evaluate("""const converter = Converter({from:'cn', to:'jp'});""");
+    _fjs = t;
+    return _fjs!;
+  }
 
-  _search(int mode) {
+  _search(int mode) async {
     if (_controller.text.isEmpty) {
       _streamController.add(null);
       return;
     }
     _searchMode = mode;
-    _streamController.add(_controller.text);
+    JavascriptRuntime t = await flutterJs;
+    String s = _controller.text;
+    s = s.replaceAll("\\pc","\\p{Han}");
+    s = s.replaceAll("\\ph","\\p{Hiragana}");
+    s = s.replaceAll("\\pk","\\p{Katakana}");
+    s = t.evaluate('converter(${json.encode(s)})').stringResult;
+    _streamController.add(s);
   }
 
   _cpListener() async {
@@ -156,6 +173,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
+    _fjs?.dispose();
     ClipboardListener.removeListener(_cpListener);
     super.dispose();
   }
@@ -295,25 +313,31 @@ class _MyHomePageState extends State<MyHomePage> {
                             ? [
                                 {
                                   'word': 'EXCEPTION',
-                                  'yomikata': '',
+                                  'yomikata': '以下の説明をご覧ください',
                                   'pitchData': '',
                                   'freqRank': -1,
                                   'romaji': '',
                                   'orig': 'EXCEPTION',
                                   'imi': jsonEncode({
-                                    'Error': [e.toString()],
-                                    'Help': [
+                                    'ヘルプ': [
                                       "LIKE 検索:\n"
                                       "    _  任意の1文字\n"
                                       "    %  任意の0文字以上の文字列\n"
+                                      "\n"
                                       "REGEX 検索:\n"
                                       "    .  任意の1文字\n"
                                       "    .*  任意の0文字以上の文字列\n"
                                       "    .+  任意の1文字以上の文字列\n"
-                                      "    ^abc	前方一致。先頭がabcの文字列で始まる\n"
-                                      "    abc\$ 後方一致。末尾がabcの文字列で終わる\n"
-                                      "    [abc]	候補。a,b,cのいずれか1字"
-                                    ]
+                                      "    [\\pc]	候補。任意漢字\n"
+                                      "    [\\ph]	候補。任意平仮名\n"
+                                      "    [\\pk]	候補。任意片仮名\n"
+                                      "    [あいう\\pc]	候補。あ,い,う,任意漢字のいずれか1字\n"
+                                      "\n"
+                                      "例えば：\n"
+                                      " \"ta%_eru\" は、食べる、訪ねる、立ち上げる 等\n"
+                                      " \"[\\pc][\\pc\\ph]+る\" は、出来る、聞こえる、取り入れる 等\n"
+                                    ],
+                                    'Debug': [e.toString()],
                                   }),
                                   'expanded': true
                                 }
