@@ -49,8 +49,9 @@ class _SplashScreenState extends State<SplashScreen> {
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
 
       _controller.play();
-      await Future.delayed(const Duration(seconds: 4));
+      var f =  Future.delayed(const Duration(seconds: 8));
       await File(path).writeAsBytes(bytes, flush: true);
+      await f;
     }
 
     if (!mounted) return;
