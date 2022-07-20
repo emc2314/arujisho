@@ -11,10 +11,9 @@
 - easy selectable text
 - sentence segmentation based on NLP model
 - hatsuon link
-- dic sequences
+- adjustable dictionary ranking
 - return to expanded tile
 - sticky header
 - optimize database asset init
 - splash screen
-- katakana/hiragana/kanji extension regex
-- merge same word
+- interrupt unused query
