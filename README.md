@@ -15,5 +15,4 @@
 - return to expanded tile
 - sticky header
 - optimize database asset init
-- splash screen
 - interrupt unused query

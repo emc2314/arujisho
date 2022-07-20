@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,8 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:clipboard_listener/clipboard_listener.dart';
 import 'package:flutter_js/flutter_js.dart';
+
+import 'package:arujisho/splash_screen.dart';
 
 void main() => runApp(const MyApp());
 
@@ -19,15 +20,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ある辞書',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: Colors.pink[300],
-          secondary: Colors.pinkAccent[100],
+        title: 'ある辞書',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSwatch().copyWith(
+            primary: Colors.pink[300],
+            secondary: Colors.pinkAccent[100],
+          ),
         ),
-      ),
-      home: const MyHomePage(),
-    );
+        initialRoute: '/splash',
+        routes: {
+          '/': (context) => const MyHomePage(),
+          '/splash': (context) => const SplashScreen(),
+        });
   }
 }
 
@@ -106,19 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
     var databasesPath = await getDatabasesPath();
     var path = join(databasesPath, "arujisho.db");
 
-    var exists = await databaseExists(path);
-
-    if (!exists) {
-      try {
-        await Directory(dirname(path)).create(recursive: true);
-      } catch (_) {}
-
-      ByteData data = await rootBundle.load("db/arujisho.db");
-      List<int> bytes =
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-
-      await File(path).writeAsBytes(bytes, flush: true);
-    }
     _db = await openDatabase(path, readOnly: true);
     return _db!;
   }
@@ -329,21 +320,21 @@ class _MyHomePageState extends State<MyHomePage> {
                                   'imi': jsonEncode({
                                     'ヘルプ': [
                                       "LIKE 検索:\n"
-                                      "    _  任意の1文字\n"
-                                      "    %  任意の0文字以上の文字列\n"
-                                      "\n"
-                                      "REGEX 検索:\n"
-                                      "    .  任意の1文字\n"
-                                      "    .*  任意の0文字以上の文字列\n"
-                                      "    .+  任意の1文字以上の文字列\n"
-                                      "    [\\pc]	候補。任意漢字\n"
-                                      "    [\\ph]	候補。任意平仮名\n"
-                                      "    [\\pk]	候補。任意片仮名\n"
-                                      "    [あいう\\pc]	候補。あ,い,う,任意漢字のいずれか1字\n"
-                                      "\n"
-                                      "例えば：\n"
-                                      " \"ta%_eru\" は、食べる、訪ねる、立ち上げる 等\n"
-                                      " \"[\\pc][\\pc\\ph]+る\" は、出来る、聞こえる、取り入れる 等\n"
+                                          "    _  任意の1文字\n"
+                                          "    %  任意の0文字以上の文字列\n"
+                                          "\n"
+                                          "REGEX 検索:\n"
+                                          "    .  任意の1文字\n"
+                                          "    .*  任意の0文字以上の文字列\n"
+                                          "    .+  任意の1文字以上の文字列\n"
+                                          "    [\\pc]	候補。任意漢字\n"
+                                          "    [\\ph]	候補。任意平仮名\n"
+                                          "    [\\pk]	候補。任意片仮名\n"
+                                          "    [あいう\\pc]	候補。あ,い,う,任意漢字のいずれか1字\n"
+                                          "\n"
+                                          "例えば：\n"
+                                          " \"ta%_eru\" は、食べる、訪ねる、立ち上げる 等\n"
+                                          " \"[\\pc][\\pc\\ph]+る\" は、出来る、聞こえる、取り入れる 等\n"
                                     ],
                                     'Debug': [e.toString()],
                                   }),
