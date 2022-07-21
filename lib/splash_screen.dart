@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as Path;
 import 'package:video_player/video_player.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_archive/flutter_archive.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -34,23 +36,31 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _checkDB() async {
-    // playing video
     var databasesPath = await getDatabasesPath();
     var path = Path.join(databasesPath, "arujisho.db");
     var exists = await databaseExists(path);
 
     if (!exists) {
+      _controller.play();
+      var f = Future.delayed(const Duration(seconds: 8));
+      final destDir = Directory(Path.dirname(path));
       try {
-        await Directory(Path.dirname(path)).create(recursive: true);
+        await destDir.create(recursive: true);
       } catch (_) {}
 
-      ByteData data = await rootBundle.load("db/arujisho.db");
-      List<int> bytes =
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      ByteData data = await rootBundle.load("db/arujisho.db.zip");
+      final zipFile = File(
+          Path.join((await getTemporaryDirectory()).path, "arujisho.db.zip"));
+      await zipFile.writeAsBytes(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+          flush: true);
 
-      _controller.play();
-      var f =  Future.delayed(const Duration(seconds: 8));
-      await File(path).writeAsBytes(bytes, flush: true);
+      try {
+        await ZipFile.extractToDirectory(
+          zipFile: zipFile,
+          destinationDir: destDir,
+        );
+      } catch (_) {}
       await f;
     }
 
