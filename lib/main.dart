@@ -14,6 +14,7 @@ import 'package:arujisho/splash_screen.dart';
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
+  static const isRelease = true;
   const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
@@ -21,12 +22,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: 'ある辞書',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            primary: Colors.pink[300],
-            secondary: Colors.pinkAccent[100],
-          ),
-        ),
+        theme: isRelease
+            ? ThemeData(
+                primarySwatch: Colors.blue,
+              )
+            : ThemeData(
+                colorScheme: ColorScheme.fromSwatch().copyWith(
+                  primary: Colors.pink[300],
+                  secondary: Colors.pinkAccent[100],
+                ),
+              ),
         initialRoute: '/splash',
         routes: {
           '/': (context) => const MyHomePage(),
@@ -365,7 +370,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                       <Widget>[
                                         Container(
                                             decoration: BoxDecoration(
-                                                color: Colors.blue[600],
+                                                color: MyApp.isRelease
+                                                    ? Colors.red[600]
+                                                    : Colors.blue[600],
                                                 borderRadius:
                                                     const BorderRadius.all(
                                                         Radius.circular(20))),
