@@ -193,7 +193,7 @@ class _MyHomePageState extends State<MyHomePage> {
         },
         child: Scaffold(
           appBar: AppBar(
-            title: const Text("ある辞書"),
+            title: const Text("ある辞書", style: TextStyle(fontSize: 20)),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(48.0),
               child: Row(
@@ -372,7 +372,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                             decoration: BoxDecoration(
                                                 color: MyApp.isRelease
                                                     ? Colors.red[600]
-                                                    : Colors.blue[600],
+                                                    : Colors.blue[400],
                                                 borderRadius:
                                                     const BorderRadius.all(
                                                         Radius.circular(20))),
