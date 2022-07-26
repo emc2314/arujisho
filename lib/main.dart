@@ -123,9 +123,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<JavascriptRuntime> get flutterJs async {
     if (_fjs != null) return _fjs!;
     JavascriptRuntime t = getJavascriptRuntime();
-    String openccJS = await rootBundle.loadString("js/opencc.js");
-    t.evaluate(openccJS);
-    t.evaluate("""const converter = Converter({from:'cn', to:'jp'});""");
+    String cjconvert = await rootBundle.loadString("js/cjconvert.js");
+    t.evaluate(cjconvert);
     _fjs = t;
     return _fjs!;
   }
@@ -141,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
     s = s.replaceAll("\\pc", "\\p{Han}");
     s = s.replaceAll("\\ph", "\\p{Hiragana}");
     s = s.replaceAll("\\pk", "\\p{Katakana}");
-    s = t.evaluate('converter(${json.encode(s)})').stringResult;
+    s = t.evaluate('cj_convert(${json.encode(s)})').stringResult;
     _streamController.add(s);
   }
 
@@ -273,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       try {
                         if (method == "MATCH") {
                           result = List.of(await db.rawQuery(
-                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
                             'WHERE $searchField MATCH "${snapshot.data}*" OR r$searchField '
                             'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*" '
@@ -282,7 +281,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           ));
                         } else {
                           result = List.of(await db.rawQuery(
-                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
                             'WHERE word $method "${snapshot.data}" '
                             'OR yomikata $method "${snapshot.data}" '
@@ -322,6 +321,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   'freqRank': -1,
                                   'romaji': '',
                                   'orig': 'EXCEPTION',
+                                  'origForm': '',
                                   'imi': jsonEncode({
                                     'ヘルプ': [
                                       "LIKE 検索:\n"
@@ -354,14 +354,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       onRequest: queryAuto,
                       itemBuilder: (context, item, index) {
                         Map<String, dynamic> imi = jsonDecode(item['imi']);
+                        final word = item['origForm'] == '' ? item['word'] : item['origForm'];
                         return ListTileTheme(
                             dense: true,
                             child: ExpansionTile(
                               initiallyExpanded: item.containsKey('expanded') &&
                                   item['expanded'],
-                              title: Text(item['word'] == item['orig']
-                                  ? item['word']
-                                  : '${item['word']} →〔${item['orig']}〕'),
+                              title: Text(word == item['orig']
+                                  ? word
+                                  : '$word →〔${item['orig']}〕'),
                               trailing: Text(item['freqRank'].toString()),
                               subtitle: Text("${item['yomikata']} "
                                   "${item['pitchData'] != '' ? item['pitchData'] : ''}"),
