@@ -46,4 +46,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-*.db.zip
+db/*
+!db/.keep
+database_build/jisho/*
+!database_build/jisho/.keep
+database_build/*.pkl
