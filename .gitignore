@@ -51,3 +51,4 @@ db/*
 database_build/jisho/*
 !database_build/jisho/.keep
 database_build/*.pkl
+js/cjconvert.js
