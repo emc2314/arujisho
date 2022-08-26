@@ -20,3 +20,4 @@
 - return to expanded tile
 - sticky header
 - interrupt unused query
+- use sliding instead of back when switching between different queries
