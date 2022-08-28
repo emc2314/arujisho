@@ -1,0 +1,88 @@
+workflows:
+  default-workflow:
+    name: Default Workflow
+    max_build_duration: 60
+    environment:
+      flutter: master
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - tag
+      branch_patterns:
+        - pattern: '*'
+          include: true
+          source: true
+      tag_patterns:
+        - pattern: '*'
+          include: true
+    scripts:
+      - |
+        # set up debug keystore
+        rm -f ~/.android/debug.keystore
+        keytool -genkeypair \
+          -alias androiddebugkey \
+          -keypass android \
+          -keystore ~/.android/debug.keystore \
+          -storepass android \
+          -dname 'CN=Android Debug,O=Android,C=US' \
+          -keyalg 'RSA' \
+          -keysize 2048 \
+          -validity 10000
+      - |
+        # set up local properties
+        echo "flutter.sdk=$HOME/programs/flutter" > "$FCI_BUILD_DIR/android/local.properties"
+      - flutter packages pub get
+      - |
+        #!/bin/sh
+        wget https://jp.xydustc.me/f/arujisho.db.zip -O db/arujisho.db.zip
+        wget https://jp.xydustc.me/f/cjconvert.js -O js/cjconvert.js
+      - flutter build apk --release
+      - find . -name "Podfile" -execdir pod install \;
+      - flutter build ipa --release --no-codesign
+    artifacts:
+      - build/**/outputs/apk/**/*.apk
+      - build/**/outputs/bundle/**/*.aab
+      - build/ios/ipa/*.ipa
+      - '*.snap'
+      - build/windows/**/*.msix
+  debug:
+    name: Debug
+    max_build_duration: 60
+    environment:
+      flutter: master
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - |
+        # set up debug keystore
+        rm -f ~/.android/debug.keystore
+        keytool -genkeypair \
+          -alias androiddebugkey \
+          -keypass android \
+          -keystore ~/.android/debug.keystore \
+          -storepass android \
+          -dname 'CN=Android Debug,O=Android,C=US' \
+          -keyalg 'RSA' \
+          -keysize 2048 \
+          -validity 10000
+      - |
+        # set up local properties
+        echo "flutter.sdk=$HOME/programs/flutter" > "$FCI_BUILD_DIR/android/local.properties"
+      - flutter packages pub get
+      - |
+        #!/bin/sh
+        wget https://jp.xydustc.me/f/arujisho.db.zip -O db/arujisho.db.zip
+        wget https://jp.xydustc.me/f/cjconvert.js -O js/cjconvert.js
+      - flutter build apk --release
+      - find . -name "Podfile" -execdir pod install \;
+      - flutter build ipa --release --no-codesign
+    artifacts:
+      - build/**/outputs/apk/**/*.apk
+      - build/**/outputs/bundle/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - '*.snap'
+      - build/windows/**/*.msix
+      - flutter_drive.log
