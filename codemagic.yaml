@@ -39,7 +39,15 @@ workflows:
         wget https://jp.xydustc.me/f/cjconvert.js -O js/cjconvert.js
       - flutter build apk --release
       - find . -name "Podfile" -execdir pod install \;
-      - flutter build ipa --release --no-codesign
+      - flutter build ios --release --no-codesign
+      - |
+        #!/bin/sh
+        mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/arujisho.apk
+        mkdir -p Payload
+        mkdir -p build/ios/ipa
+        mv ./build/ios/iphoneos/Runner.app Payload
+        zip -r -y -9 Payload.zip Payload/Runner.app
+        mv Payload.zip build/ios/ipa/arujisho.ipa
     artifacts:
       - build/**/outputs/apk/**/*.apk
       - build/**/outputs/bundle/**/*.aab
@@ -76,7 +84,15 @@ workflows:
         wget https://jp.xydustc.me/f/cjconvert.js -O js/cjconvert.js
       - flutter build apk --release
       - find . -name "Podfile" -execdir pod install \;
-      - flutter build ipa --release --no-codesign
+      - flutter build ios --release --no-codesign
+      - |
+        #!/bin/sh
+        mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/arujisho.apk
+        mkdir -p Payload
+        mkdir -p build/ios/ipa
+        mv ./build/ios/iphoneos/Runner.app Payload
+        zip -r -y -0 Payload.zip Payload/Runner.app
+        mv Payload.zip build/ios/ipa/arujisho.ipa
     artifacts:
       - build/**/outputs/apk/**/*.apk
       - build/**/outputs/bundle/**/*.aab
