@@ -8,6 +8,8 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:clipboard_listener/clipboard_listener.dart';
 import 'package:flutter_js/flutter_js.dart';
+import 'package:html/parser.dart' show parse;
+import 'package:bootstrap_icons/bootstrap_icons.dart';
 
 import 'package:arujisho/splash_screen.dart';
 
@@ -227,7 +229,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   IconButton(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     icon: const Icon(
-                      Icons.filter_list,
+                      BootstrapIcons.sort_down_alt,
                       color: Colors.white,
                     ),
                     onPressed: () {
@@ -272,7 +274,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       try {
                         if (method == "MATCH") {
                           result = List.of(await db.rawQuery(
-                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'SELECT tt.word,tt.yomikata,tt.pitchData,'
+                            'tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
                             'WHERE $searchField MATCH "${snapshot.data}*" OR r$searchField '
                             'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*" '
@@ -281,7 +284,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           ));
                         } else {
                           result = List.of(await db.rawQuery(
-                            'SELECT tt.word,tt.yomikata,tt.pitchData,tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'SELECT tt.word,tt.yomikata,tt.pitchData,'
+                            'tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
                             'WHERE word $method "${snapshot.data}" '
                             'OR yomikata $method "${snapshot.data}" '
@@ -354,7 +358,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       onRequest: queryAuto,
                       itemBuilder: (context, item, index) {
                         Map<String, dynamic> imi = jsonDecode(item['imi']);
-                        final word = item['origForm'] == '' ? item['word'] : item['origForm'];
+                        final String pitchData = item['pitchData'] != ''
+                            ? jsonDecode(item['pitchData'])
+                                .map((x) =>
+                                    x <= 20 ? '⓪①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[x] : '?')
+                                .toList()
+                                .join()
+                            : '';
+                        final word = item['origForm'] == ''
+                            ? item['word']
+                            : item['origForm'];
                         return ListTileTheme(
                             dense: true,
                             child: ExpansionTile(
@@ -365,7 +378,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   : '$word →〔${item['orig']}〕'),
                               trailing: Text(item['freqRank'].toString()),
                               subtitle: Text("${item['yomikata']} "
-                                  "${item['pitchData'] != '' ? item['pitchData'] : ''}"),
+                                  "$pitchData"),
                               children: imi.keys
                                   .map<List<Widget>>((s) =>
                                       <Widget>[
