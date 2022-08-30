@@ -9,7 +9,10 @@ import 'package:sqflite/sqflite.dart';
 import 'package:clipboard_listener/clipboard_listener.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:html/parser.dart' show parse;
+import 'package:http/http.dart' as http;
+import 'package:just_audio/just_audio.dart';
 import 'package:bootstrap_icons/bootstrap_icons.dart';
+import 'package:icofont_flutter/icofont_flutter.dart';
 
 import 'package:arujisho/splash_screen.dart';
 
@@ -144,6 +147,60 @@ class _MyHomePageState extends State<MyHomePage> {
     s = s.replaceAll("\\pk", "\\p{Katakana}");
     s = t.evaluate('cj_convert(${json.encode(s)})').stringResult;
     _streamController.add(s);
+  }
+
+  void _hastuon(Map item) async {
+    final player = AudioPlayer();
+    Map<String, String> burpHeader = {
+      "Sec-Ch-Ua":
+          "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\"",
+      "Dnt": "1",
+      "Sec-Ch-Ua-Mobile": "?0",
+      "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+      "Sec-Ch-Ua-Platform": "\"Windows\"",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "*/*",
+      "Origin": "https://www.japanesepod101.com",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Dest": "empty",
+      "Accept-Encoding": "gzip, deflate",
+      "Accept-Language":
+          "en-US,en;q=0.9,zh-TW;q=0.8,zh-CN;q=0.7,zh;q=0.6,ja;q=0.5",
+      "Connection": "close"
+    };
+    String? url;
+    try {
+      var resp = await http.post(
+          Uri.parse(
+              'https://www.japanesepod101.com/learningcenter/reference/dictionary_post'),
+          headers: burpHeader,
+          body: {
+            "post": "dictionary_reference",
+            "match_type": "exact",
+            "search_query": item['word'],
+            "vulgar": "true"
+          });
+      var dom = parse(resp.body);
+      for (var row in dom.getElementsByClassName('dc-result-row')) {
+        try {
+          var audio = row.getElementsByTagName('audio')[0];
+          var roma =
+              row.getElementsByClassName('dc-vocab_romanization')[0].text;
+          if (item['romaji'] == roma) {
+            url = audio.getElementsByTagName('source')[0].attributes['src'];
+            break;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    if(url != null && url.isNotEmpty) {
+      try {
+        await player.setUrl(url, headers: burpHeader);
+        await player.play();
+      } catch (_) {}
+    }
   }
 
   _cpListener() async {
@@ -294,6 +351,11 @@ class _MyHomePageState extends State<MyHomePage> {
                             ') AS tt ON tt.idex=imis._rowid_)',
                           ));
                         }
+                        result = result.map((qRow) {
+                          Map map = {};
+                          qRow.forEach((key, value) => map[key] = value);
+                          return map;
+                        }).toList();
                         int balancedWeight(Map item, int bLen) {
                           return (item['freqRank'] *
                                   (item[searchField]
@@ -336,10 +398,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                           "    .  任意の1文字\n"
                                           "    .*  任意の0文字以上の文字列\n"
                                           "    .+  任意の1文字以上の文字列\n"
-                                          "    [\\pc]	候補。任意漢字\n"
-                                          "    [\\ph]	候補。任意平仮名\n"
-                                          "    [\\pk]	候補。任意片仮名\n"
-                                          "    [あいう\\pc]	候補。あ,い,う,任意漢字のいずれか1字\n"
+                                          "    \\pc	任意漢字\n"
+                                          "    \\ph	任意平仮名\n"
+                                          "    \\pk	任意片仮名\n"
+                                          "    []	候補。[]で括られた中の文字は、その中のどれか１つに合致する訳です\n"
                                           "\n"
                                           "例えば：\n"
                                           " \"ta%_eru\" は、食べる、訪ねる、立ち上げる 等\n"
@@ -368,54 +430,69 @@ class _MyHomePageState extends State<MyHomePage> {
                         final word = item['origForm'] == ''
                             ? item['word']
                             : item['origForm'];
+
                         return ListTileTheme(
                             dense: true,
                             child: ExpansionTile(
-                              initiallyExpanded: item.containsKey('expanded') &&
-                                  item['expanded'],
-                              title: Text(word == item['orig']
-                                  ? word
-                                  : '$word →〔${item['orig']}〕'),
-                              trailing: Text(item['freqRank'].toString()),
-                              subtitle: Text("${item['yomikata']} "
-                                  "$pitchData"),
-                              children: imi.keys
-                                  .map<List<Widget>>((s) =>
-                                      <Widget>[
-                                        Container(
-                                            decoration: BoxDecoration(
-                                                color: MyApp.isRelease
-                                                    ? Colors.red[600]
-                                                    : Colors.blue[400],
-                                                borderRadius:
-                                                    const BorderRadius.all(
-                                                        Radius.circular(20))),
-                                            child: Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                        5, 0, 5, 0),
-                                                child: Text(
-                                                  s,
-                                                  style: const TextStyle(
-                                                      color: Colors.white),
-                                                ))),
-                                      ] +
-                                      List<List<Widget>>.from(
-                                          imi[s].map((simi) => <Widget>[
-                                                ListTile(
-                                                    title: SelectableText(simi,
-                                                        toolbarOptions:
-                                                            const ToolbarOptions(
-                                                                copy: true,
-                                                                selectAll:
-                                                                    false))),
-                                                const Divider(
-                                                    color: Colors.grey),
-                                              ])).reduce((a, b) => a + b))
-                                  .reduce((a, b) => a + b),
-                              onExpansionChanged: (_) =>
-                                  FocusManager.instance.primaryFocus?.unfocus(),
-                            ));
+                                initiallyExpanded:
+                                    item.containsKey('expanded') &&
+                                        item['expanded'],
+                                title: Text(word == item['orig']
+                                    ? word
+                                    : '$word →〔${item['orig']}〕'),
+                                trailing: item.containsKey('expanded') &&
+                                        item['freqRank'] != -1 &&
+                                        item['expanded']
+                                    ? Container(
+                                        padding: const EdgeInsets.all(0.0),
+                                        width:
+                                            30.0, // you can adjust the width as you need
+                                        child: IconButton(
+                                            icon: const Icon(
+                                                IcoFontIcons.soundWaveAlt),
+                                            onPressed: () => _hastuon(item)))
+                                    : Text(item['freqRank'].toString()),
+                                subtitle: Text("${item['yomikata']} "
+                                    "$pitchData"),
+                                children: imi.keys
+                                    .map<List<Widget>>((s) =>
+                                        <Widget>[
+                                          Container(
+                                              decoration: BoxDecoration(
+                                                  color: MyApp.isRelease
+                                                      ? Colors.red[600]
+                                                      : Colors.blue[400],
+                                                  borderRadius:
+                                                      const BorderRadius.all(
+                                                          Radius.circular(20))),
+                                              child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.fromLTRB(
+                                                          5, 0, 5, 0),
+                                                  child: Text(
+                                                    s,
+                                                    style: const TextStyle(
+                                                        color: Colors.white),
+                                                  ))),
+                                        ] +
+                                        List<List<Widget>>.from(
+                                            imi[s].map((simi) => <Widget>[
+                                                  ListTile(
+                                                      title: SelectableText(
+                                                          simi,
+                                                          toolbarOptions:
+                                                              const ToolbarOptions(
+                                                                  copy: true,
+                                                                  selectAll:
+                                                                      false))),
+                                                  const Divider(
+                                                      color: Colors.grey),
+                                                ])).reduce((a, b) => a + b))
+                                    .reduce((a, b) => a + b),
+                                onExpansionChanged: (expanded) {
+                                  FocusManager.instance.primaryFocus?.unfocus();
+                                  setState(() => item['expanded'] = expanded);
+                                }));
                       },
                       key: ValueKey('$snapshot.data $_searchMode'),
                     );

@@ -43,6 +43,8 @@ dependencies:
   bootstrap_icons: ^1.9.1
   html: ^0.15.0
   http: ^0.13.5
+  icofont_flutter: ^1.4.0
+  just_audio: ^0.9.28
 
 dev_dependencies:
   flutter_test:
