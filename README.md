@@ -15,7 +15,6 @@
 
 ## TODO
 - sentence segmentation based on NLP model
-- hatsuon link
 - adjustable dictionary ranking
 - return to expanded tile
 - sticky header

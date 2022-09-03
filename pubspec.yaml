@@ -45,6 +45,9 @@ dependencies:
   http: ^0.13.5
   icofont_flutter: ^1.4.0
   just_audio: ^0.9.28
+  kana_kit: ^2.0.0
+  flutter_cache_manager: ^3.3.0
+  crypto: ^3.0.2
 
 dev_dependencies:
   flutter_test:

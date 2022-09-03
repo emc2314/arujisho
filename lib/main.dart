@@ -11,6 +11,9 @@ import 'package:flutter_js/flutter_js.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
+import 'package:kana_kit/kana_kit.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:icofont_flutter/icofont_flutter.dart';
 
@@ -111,6 +114,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _controller = TextEditingController();
   final StreamController _streamController = StreamController();
   final List<String> _history = [''];
+  final Map<int, String?> _hatsuonCache = {};
+  static const _kanaKit = KanaKit();
   int _searchMode = 0;
   Timer? _debounce;
   static Database? _db;
@@ -149,8 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _streamController.add(s);
   }
 
-  void _hastuon(Map item) async {
-    final player = AudioPlayer();
+  void _hatsuon(Map item) async {
     Map<String, String> burpHeader = {
       "Sec-Ch-Ua":
           "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Google Chrome\";v=\"104\"",
@@ -161,7 +165,6 @@ class _MyHomePageState extends State<MyHomePage> {
       "Sec-Ch-Ua-Platform": "\"Windows\"",
       "Content-Type": "application/x-www-form-urlencoded",
       "Accept": "*/*",
-      "Origin": "https://www.japanesepod101.com",
       "Sec-Fetch-Site": "none",
       "Sec-Fetch-Mode": "cors",
       "Sec-Fetch-Dest": "empty",
@@ -171,35 +174,91 @@ class _MyHomePageState extends State<MyHomePage> {
       "Connection": "close"
     };
     String? url;
-    try {
-      var resp = await http.post(
-          Uri.parse(
-              'https://www.japanesepod101.com/learningcenter/reference/dictionary_post'),
-          headers: burpHeader,
-          body: {
-            "post": "dictionary_reference",
-            "match_type": "exact",
-            "search_query": item['word'],
-            "vulgar": "true"
-          });
-      var dom = parse(resp.body);
-      for (var row in dom.getElementsByClassName('dc-result-row')) {
-        try {
-          var audio = row.getElementsByTagName('audio')[0];
-          var roma =
-              row.getElementsByClassName('dc-vocab_romanization')[0].text;
-          if (item['romaji'] == roma) {
-            url = audio.getElementsByTagName('source')[0].attributes['src'];
-            break;
-          }
-        } catch (_) {}
-      }
-    } catch (_) {}
-    if(url != null && url.isNotEmpty) {
+    if (_hatsuonCache.containsKey(item['idex'])) {
+      url = _hatsuonCache[item['idex']];
+    }
+    if (url == null) {
       try {
-        await player.setUrl(url, headers: burpHeader);
-        await player.play();
+        var resp = await http.post(
+            Uri.parse(
+                'https://www.japanesepod101.com/learningcenter/reference/dictionary_post'),
+            headers: burpHeader,
+            body: {
+              "post": "dictionary_reference",
+              "match_type": "exact",
+              "search_query": item['word'],
+              "vulgar": "true"
+            });
+        var dom = parse(resp.body);
+        for (var row in dom.getElementsByClassName('dc-result-row')) {
+          try {
+            var audio = row.getElementsByTagName('audio')[0];
+            var kana = row.getElementsByClassName('dc-vocab_kana')[0].text;
+            if (_kanaKit.toKatakana(item['yomikata']) ==
+                    _kanaKit.toKatakana(kana) ||
+                _kanaKit.toHiragana(kana) == item['yomikata']) {
+              url =
+                  "https://assets.languagepod101.com/dictionary/japanese/audiomp3.php?kanji=${item['word']}&kana=$kana";
+              setState(() {
+                item['loading'] = true;
+              });
+              var file = await DefaultCacheManager()
+                  .getSingleFile(url, headers: burpHeader);
+              var hash = await sha256.bind(file.openRead()).first;
+              if (hash.toString() ==
+                  'ae6398b5a27bc8c0a771df6c907ade794be15518174773c58c7c7ddd17098906') {
+                url = audio.getElementsByTagName('source')[0].attributes['src'];
+              }
+              break;
+            }
+          } catch (_) {}
+        }
       } catch (_) {}
+      setState(() {
+        _hatsuonCache[item['idex']] = url;
+        item['loading'] = false;
+      });
+    }
+    if (url == null) {
+      try {
+        var resp = await http.get(
+            Uri.parse("https://forvo.com/word/${item['word']}/#ja"),
+            headers: burpHeader);
+        var dom = parse(resp.body);
+        var ja = dom.getElementById('language-container-ja');
+        var pronunciation =
+            ja!.getElementsByClassName('pronunciations-list')[0];
+        String play = pronunciation
+            .getElementsByClassName('play')[0]
+            .attributes['onclick']!;
+        RegExp exp = RegExp(r"Play\(\d+,'.+','.+',\w+,'([^']+)");
+        String? match = exp.firstMatch(play)?.group(1);
+        if (match != null && match.isNotEmpty) {
+          match = utf8.decode(base64.decode(match));
+          url = 'https://audio00.forvo.com/audios/mp3/$match';
+        } else {
+          exp = RegExp(r"Play\(\d+,'[^']+','([^']+)");
+          match = exp.firstMatch(play)?.group(1);
+          match = utf8.decode(base64.decode(match!));
+          url = 'https://audio00.forvo.com/ogg/$match';
+        }
+      } catch (_) {}
+      _hatsuonCache[item['idex']] = url;
+    }
+    if (url != null && url.isNotEmpty) {
+      setState(() {
+        item['loading'] = true;
+      });
+      try {
+        final player = AudioPlayer();
+        var file =
+            await DefaultCacheManager().getSingleFile(url, headers: burpHeader);
+        await player.setFilePath(file.path);
+        player.play();
+      } catch (_) {}
+      setState(() {
+        item['loading'] = false;
+      });
     }
   }
 
@@ -332,7 +391,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         if (method == "MATCH") {
                           result = List.of(await db.rawQuery(
                             'SELECT tt.word,tt.yomikata,tt.pitchData,'
-                            'tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'tt.origForm,tt.freqRank,tt.idex,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
                             'WHERE $searchField MATCH "${snapshot.data}*" OR r$searchField '
                             'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*" '
@@ -342,7 +401,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         } else {
                           result = List.of(await db.rawQuery(
                             'SELECT tt.word,tt.yomikata,tt.pitchData,'
-                            'tt.origForm,tt.freqRank,tt.romaji,imis.imi,imis.orig '
+                            'tt.origForm,tt.freqRank,tt.idex,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
                             'WHERE word $method "${snapshot.data}" '
                             'OR yomikata $method "${snapshot.data}" '
@@ -385,6 +444,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   'yomikata': '以下の説明をご覧ください',
                                   'pitchData': '',
                                   'freqRank': -1,
+                                  'idex': -1,
                                   'romaji': '',
                                   'orig': 'EXCEPTION',
                                   'origForm': '',
@@ -445,12 +505,19 @@ class _MyHomePageState extends State<MyHomePage> {
                                         item['expanded']
                                     ? Container(
                                         padding: const EdgeInsets.all(0.0),
-                                        width:
-                                            30.0, // you can adjust the width as you need
-                                        child: IconButton(
-                                            icon: const Icon(
-                                                IcoFontIcons.soundWaveAlt),
-                                            onPressed: () => _hastuon(item)))
+                                        width: 35.0,
+                                        child: item.containsKey('loading') &&
+                                                item['loading']
+                                            ? const CircularProgressIndicator()
+                                            : IconButton(
+                                                icon: _hatsuonCache.containsKey(
+                                                            item['idex']) &&
+                                                        _hatsuonCache[
+                                                                item['idex']] ==
+                                                            null
+                                                    ? const Icon(Icons.error_outline)
+                                                    : const Icon(IcoFontIcons.soundWaveAlt),
+                                                onPressed: () => _hatsuon(item)))
                                     : Text(item['freqRank'].toString()),
                                 subtitle: Text("${item['yomikata']} "
                                     "$pitchData"),
@@ -475,19 +542,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                                         color: Colors.white),
                                                   ))),
                                         ] +
-                                        List<List<Widget>>.from(
-                                            imi[s].map((simi) => <Widget>[
-                                                  ListTile(
-                                                      title: SelectableText(
-                                                          simi,
-                                                          toolbarOptions:
-                                                              const ToolbarOptions(
-                                                                  copy: true,
-                                                                  selectAll:
-                                                                      false))),
-                                                  const Divider(
-                                                      color: Colors.grey),
-                                                ])).reduce((a, b) => a + b))
+                                        List<List<Widget>>.from(imi[s].map((simi) => <Widget>[
+                                              ListTile(
+                                                  title: SelectableText(simi,
+                                                      toolbarOptions:
+                                                          const ToolbarOptions(
+                                                              copy: true,
+                                                              selectAll:
+                                                                  false))),
+                                              const Divider(color: Colors.grey),
+                                            ])).reduce((a, b) => a + b))
                                     .reduce((a, b) => a + b),
                                 onExpansionChanged: (expanded) {
                                   FocusManager.instance.primaryFocus?.unfocus();
