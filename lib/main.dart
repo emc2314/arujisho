@@ -215,7 +215,6 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       } catch (_) {}
       setState(() {
-        _hatsuonCache[item['idex']] = url;
         item['loading'] = false;
       });
     }
@@ -243,7 +242,6 @@ class _MyHomePageState extends State<MyHomePage> {
           url = 'https://audio00.forvo.com/ogg/$match';
         }
       } catch (_) {}
-      _hatsuonCache[item['idex']] = url;
     }
     if (url != null && url.isNotEmpty) {
       setState(() {
@@ -256,10 +254,11 @@ class _MyHomePageState extends State<MyHomePage> {
         await player.setFilePath(file.path);
         player.play();
       } catch (_) {}
-      setState(() {
-        item['loading'] = false;
-      });
     }
+    setState(() {
+      _hatsuonCache[item['idex']] = url;
+      item['loading'] = false;
+    });
   }
 
   _cpListener() async {
@@ -342,16 +341,42 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    icon: const Icon(
-                      BootstrapIcons.sort_down_alt,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      _search(1);
-                    },
-                  )
+                  Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: InkWell(
+                            onTap: () {
+                              _search(-1);
+                            },
+                            onLongPress: () => showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Text('頻度コントロール'),
+                                    content: TextField(
+                                      onChanged: (value) {
+                                        int v = 0;
+                                        try {
+                                          v = int.parse(value);
+                                          assert(v > 0);
+                                        } catch (_) {}
+                                        setState(() {
+                                          _searchMode = v;
+                                        });
+                                      },
+                                      decoration: const InputDecoration(
+                                          hintText: "基準頻度（正整数）"),
+                                    ),
+                                  );
+                                }),
+                            child: Ink(
+                                child: const Icon(
+                              BootstrapIcons.sort_down_alt,
+                              color: Colors.white,
+                            )),
+                          )))
                 ],
               ),
             ),
@@ -393,8 +418,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             'SELECT tt.word,tt.yomikata,tt.pitchData,'
                             'tt.origForm,tt.freqRank,tt.idex,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
-                            'WHERE $searchField MATCH "${snapshot.data}*" OR r$searchField '
-                            'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*" '
+                            'WHERE ($searchField MATCH "${snapshot.data}*" OR r$searchField '
+                            'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*") '
+                            '${(_searchMode > 0 ? "AND _rowid_ >= $_searchMode" : "")} '
                             'ORDER BY _rowid_ LIMIT $nextIndex, $pageSize'
                             ') AS tt ON tt.idex=imis._rowid_)',
                           ));
@@ -403,9 +429,10 @@ class _MyHomePageState extends State<MyHomePage> {
                             'SELECT tt.word,tt.yomikata,tt.pitchData,'
                             'tt.origForm,tt.freqRank,tt.idex,tt.romaji,imis.imi,imis.orig '
                             'FROM (imis JOIN (SELECT * FROM jpdc '
-                            'WHERE word $method "${snapshot.data}" '
+                            'WHERE (word $method "${snapshot.data}" '
                             'OR yomikata $method "${snapshot.data}" '
-                            'OR romaji $method "${snapshot.data}" '
+                            'OR romaji $method "${snapshot.data}") '
+                            '${(_searchMode > 0 ? "AND _rowid_ >= $_searchMode" : "")} '
                             'ORDER BY _rowid_ LIMIT $nextIndex, $pageSize'
                             ') AS tt ON tt.idex=imis._rowid_)',
                           ));
