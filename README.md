@@ -1,5 +1,7 @@
 <h1><img align="left" src="icon.png" width="48px">ある辞書</h1>
 
+[![Codemagic build status](https://api.codemagic.io/apps/62d0c7c9b2128b2e5dbb1002/default-workflow/status_badge.svg)](https://codemagic.io/apps/62d0c7c9b2128b2e5dbb1002/default-workflow/latest_build)
+
 日本語辞書です
 
 <img src="https://user-images.githubusercontent.com/14357110/180193393-b4178547-ada3-4fe8-bcbb-28ce752cdd46.png" width="300">
