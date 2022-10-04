@@ -135,6 +135,9 @@ class _MyHomePageState extends State<MyHomePage> {
       _streamController.add(null);
       return;
     }
+    if (_history.last != _controller.text) {
+      _history.add(_controller.text);
+    }
     _searchMode = mode;
     String s = _controller.text;
     s = s.replaceAll("\\pc", "\\p{Han}");
@@ -254,15 +257,19 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  _setSearchContent(String text) {
+    _controller.value = TextEditingValue(
+        text: text,
+        selection:
+            TextSelection.fromPosition(TextPosition(offset: text.length)));
+  }
+
   _cpListener() async {
     String cp = (await Clipboard.getData('text/plain'))!.text ?? '';
     if (cp == _controller.text) {
       return;
     }
-    _history.add(_controller.text);
-    _controller.value = TextEditingValue(
-        text: cp,
-        selection: TextSelection.fromPosition(TextPosition(offset: cp.length)));
+    _setSearchContent(cp);
   }
 
   @override
@@ -293,10 +300,7 @@ class _MyHomePageState extends State<MyHomePage> {
           if (_history.isEmpty) return true;
           String temp = _history.last;
           _history.removeLast();
-          _controller.value = TextEditingValue(
-              text: temp,
-              selection: TextSelection.fromPosition(
-                  TextPosition(offset: temp.length)));
+          _setSearchContent(temp);
           return false;
         },
         child: Scaffold(
