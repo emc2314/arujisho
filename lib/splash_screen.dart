@@ -32,35 +32,41 @@ class _SplashScreenState extends State<SplashScreen> {
       })
       ..setVolume(0.0);
 
-    _checkDB();
+    _initAppData();
   }
 
-  void _checkDB() async {
+  void _unZip(String bundlePath, Directory destDir) async {
+    try {
+      await destDir.create(recursive: true);
+    } catch (_) {}
+
+    ByteData data = await rootBundle.load(bundlePath);
+    final zipFile = File(Path.join(
+        (await getTemporaryDirectory()).path, bundlePath.split('/').last));
+    await zipFile.writeAsBytes(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        flush: true);
+
+    try {
+      await ZipFile.extractToDirectory(
+        zipFile: zipFile,
+        destinationDir: destDir,
+      );
+    } catch (_) {}
+    zipFile.deleteSync();
+  }
+
+  void _initAppData() async {
     var databasesPath = await getDatabasesPath();
-    var path = Path.join(databasesPath, "arujisho.db");
-    var exists = await databaseExists(path);
+    var dbPath = Path.join(databasesPath, "arujisho.db");
+    var exists = await databaseExists(dbPath);
 
     if (!exists) {
       _controller.play();
       var f = Future.delayed(const Duration(seconds: 8));
-      final destDir = Directory(Path.dirname(path));
-      try {
-        await destDir.create(recursive: true);
-      } catch (_) {}
-
-      ByteData data = await rootBundle.load("db/arujisho.db.zip");
-      final zipFile = File(
-          Path.join((await getTemporaryDirectory()).path, "arujisho.db.zip"));
-      await zipFile.writeAsBytes(
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-          flush: true);
-
-      try {
-        await ZipFile.extractToDirectory(
-          zipFile: zipFile,
-          destinationDir: destDir,
-        );
-      } catch (_) {}
+      _unZip("sudachi.rs/resources/sudachidict.zip",
+          await getApplicationSupportDirectory());
+      _unZip("db/arujisho.db.zip", Directory(Path.dirname(dbPath)));
       await f;
     }
 

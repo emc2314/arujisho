@@ -29,13 +29,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqflite:
-  clipboard_listener:
-  path:
-  flutter_js:
-  video_player:
-  flutter_archive:
-  path_provider:
+  sqflite: ^2.1.0
+  clipboard_listener: ^2.0.0
+  path: ^1.8.2
+  video_player: ^2.4.7
+  flutter_archive: ^5.0.0
+  path_provider: ^2.0.11
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -48,6 +47,8 @@ dependencies:
   kana_kit: ^2.0.0
   flutter_cache_manager: ^3.3.0
   crypto: ^3.0.2
+  ffi: ^2.0.1
+  flutter_rust_bridge: ^1.48.1
 
 dev_dependencies:
   flutter_test:
@@ -59,7 +60,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
-  flutter_launcher_icons:
+  flutter_launcher_icons: ^0.10.0
+  ffigen: ^6.1.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -75,7 +77,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - db/arujisho.db.zip
-    - js/cjconvert.js
+    - sudachi.rs/resources/sudachidict.zip
     - media/splash.mp4
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

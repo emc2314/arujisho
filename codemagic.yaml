@@ -36,7 +36,6 @@ workflows:
       - |
         #!/bin/sh
         wget https://jp.xydustc.me/f/arujisho.db.zip -O db/arujisho.db.zip
-        wget https://jp.xydustc.me/f/cjconvert.js -O js/cjconvert.js
       - flutter build apk --release
       - find . -name "Podfile" -execdir pod install \;
       - flutter build ios --release --no-codesign
@@ -81,7 +80,6 @@ workflows:
       - |
         #!/bin/sh
         wget https://jp.xydustc.me/f/arujisho.db.zip -O db/arujisho.db.zip
-        wget https://jp.xydustc.me/f/cjconvert.js -O js/cjconvert.js
         sed -i'.bak' -e 's/isRelease = true/isRelease = false/g' lib/main.dart
       - flutter build apk --release
       - find . -name "Podfile" -execdir pod install \;

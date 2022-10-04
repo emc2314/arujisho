@@ -4,10 +4,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as Path;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:clipboard_listener/clipboard_listener.dart';
-import 'package:flutter_js/flutter_js.dart';
 import 'package:html/parser.dart' show parse;
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
@@ -18,6 +18,7 @@ import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:icofont_flutter/icofont_flutter.dart';
 
 import 'package:arujisho/splash_screen.dart';
+import 'package:arujisho/ffi.io.dart';
 
 void main() => runApp(const MyApp());
 
@@ -123,20 +124,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_db != null) return _db!;
 
     var databasesPath = await getDatabasesPath();
-    var path = join(databasesPath, "arujisho.db");
+    var path = Path.join(databasesPath, "arujisho.db");
 
     _db = await openDatabase(path, readOnly: true);
     return _db!;
-  }
-
-  static JavascriptRuntime? _fjs;
-  Future<JavascriptRuntime> get flutterJs async {
-    if (_fjs != null) return _fjs!;
-    JavascriptRuntime t = getJavascriptRuntime();
-    String cjconvert = await rootBundle.loadString("js/cjconvert.js");
-    t.evaluate(cjconvert);
-    _fjs = t;
-    return _fjs!;
   }
 
   _search(int mode) async {
@@ -145,12 +136,14 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     _searchMode = mode;
-    JavascriptRuntime t = await flutterJs;
     String s = _controller.text;
     s = s.replaceAll("\\pc", "\\p{Han}");
     s = s.replaceAll("\\ph", "\\p{Hiragana}");
     s = s.replaceAll("\\pk", "\\p{Katakana}");
-    s = t.evaluate('cj_convert(${json.encode(s)})').stringResult;
+    //s = t.evaluate('cj_convert(${json.encode(s)})').stringResult;
+    String sp = Path.join(
+        (await getApplicationSupportDirectory()).path, "sudachi.json");
+    print(await sudachiAPI.parse(data: s, configPath: sp));
     _streamController.add(s);
   }
 
@@ -289,7 +282,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
-    _fjs?.dispose();
     ClipboardListener.removeListener(_cpListener);
     super.dispose();
   }
