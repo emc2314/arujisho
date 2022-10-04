@@ -17,10 +17,11 @@ import 'package:crypto/crypto.dart' show sha256;
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:icofont_flutter/icofont_flutter.dart';
 import 'package:expandable/expandable.dart';
-import 'package:ruby_text/ruby_text.dart';
 
 import 'package:arujisho/splash_screen.dart';
 import 'package:arujisho/ffi.io.dart';
+import 'package:arujisho/ruby_text/ruby_text.dart';
+import 'package:arujisho/ruby_text/ruby_text_data.dart';
 
 void main() => runApp(const MyApp());
 
