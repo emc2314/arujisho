@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:tuple/tuple.dart';
 
@@ -82,15 +82,13 @@ class RubySpanWidget extends HookWidget {
     final effectiveRubyTextStyle = result.item2;
 
     final texts = <Widget>[];
-    if (data.ruby != null) {
-      texts.add(
-        Text(
-          data.ruby!,
-          textAlign: TextAlign.center,
-          style: effectiveRubyTextStyle,
-        ),
-      );
-    }
+    texts.add(
+      Text(
+        data.ruby == null ? '' : data.ruby!,
+        textAlign: TextAlign.center,
+        style: effectiveRubyTextStyle,
+      ),
+    );
 
     texts.add(
       Text(
@@ -100,9 +98,31 @@ class RubySpanWidget extends HookWidget {
       ),
     );
 
-    return Column(
-      children: texts,
-    );
+    return data.onTap == null
+        ? Column(
+            children: texts,
+          )
+        : InkWell(
+            onTap: data.onTap,
+            child: Column(children: [
+              texts[0],
+              Container(
+                  margin: const EdgeInsets.only(left: 2, right: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.all(Radius.circular(2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.5),
+                        spreadRadius: 0.5,
+                        blurRadius: 1.5,
+                        offset:
+                            const Offset(1, 2), // changes position of shadow
+                      ),
+                    ],
+                  ), // BoxDecoration(border: Border.all()),
+                  child: texts[1])
+            ]));
   }
 }
 

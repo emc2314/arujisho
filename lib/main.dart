@@ -109,8 +109,13 @@ class _InfiniteListState<T> extends State<InfiniteList<T>> {
 class DictionaryTerm extends StatefulWidget {
   final String dictName;
   final String imi;
+  final Function(String) queryWord;
 
-  const DictionaryTerm({Key? key, required this.dictName, required this.imi})
+  const DictionaryTerm(
+      {Key? key,
+      required this.dictName,
+      required this.imi,
+      required this.queryWord})
       : super(key: key);
 
   @override
@@ -190,6 +195,7 @@ class _DictionaryTermState extends State<DictionaryTerm> {
         controller: _expandControl,
         header: Wrap(children: [
           InkWell(
+              onTap: _switchFurigana,
               child: Container(
                   decoration: BoxDecoration(
                       color:
@@ -200,16 +206,14 @@ class _DictionaryTermState extends State<DictionaryTerm> {
                       child: Text(
                         widget.dictName,
                         style: const TextStyle(color: Colors.white),
-                      ))),
-              onTap: () {
-                _switchFurigana();
-              })
+                      ))))
         ]),
         collapsed: const SizedBox.shrink(),
         expanded: Padding(
             padding: const EdgeInsets.only(
-              top: 5,
+              top: 2,
               left: 10,
+              bottom: 4,
             ),
             child: showFurigana
                 ? tokens == null
@@ -234,12 +238,19 @@ class _DictionaryTermState extends State<DictionaryTerm> {
                                 RubyText(sentence.map<RubyTextData>((token) {
                                   if (token['POS']!.contains('記号') ||
                                       token['POS']!.contains('空白') ||
-                                      _kanaKit.isKana(token['surface']!) ||
                                       _kanaKit.isRomaji(token['surface']!)) {
                                     return RubyTextData(token['surface']!);
+                                  } else if (_kanaKit
+                                      .isKana(token['surface']!)) {
+                                    return RubyTextData(token['surface']!,
+                                        onTap: () {
+                                      widget.queryWord(token['dform']!);
+                                    });
                                   }
                                   return RubyTextData(token['surface']!,
-                                      ruby: token['reading']);
+                                      ruby: token['reading'], onTap: () {
+                                    widget.queryWord(token['dform']!);
+                                  });
                                 }).toList()))
                             .toList())
                 : SelectableText(widget.imi,
@@ -589,15 +600,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                           _searchMode == 0
                                       ? 100
                                       : 500) *
-                                  pow(item['romaji'].length / bLen,
-                                      _searchMode == 0 ? 2 : 0))
+                                  pow(item['yomikata'].length / bLen,
+                                      _searchMode == 0 ? 2.5 : 0))
                               .round();
                         }
 
                         int bLen = 1 << 31;
                         for (var w in result) {
-                          if (w['word'].length < bLen) {
-                            bLen = w['word'].length;
+                          if (w['yomikata'].length < bLen) {
+                            bLen = w['yomikata'].length;
                           }
                         }
                         result.sort((a, b) => balancedWeight(a, bLen)
@@ -693,7 +704,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                           DictionaryTerm(
                                             dictName: s,
                                             imi: simi,
-                                          ),
+                                              queryWord: _setSearchContent),
                                         ])).reduce((a, b) => a + b))
                                     .reduce((a, b) => a + b),
                                 onExpansionChanged: (expanded) {

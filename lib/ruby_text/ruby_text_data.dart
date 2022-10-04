@@ -7,6 +7,7 @@ class RubyTextData extends Equatable {
     this.ruby,
     this.style,
     this.rubyStyle,
+    this.onTap,
     this.textDirection = TextDirection.rtl,
   });
 
@@ -14,6 +15,7 @@ class RubyTextData extends Equatable {
   final String? ruby;
   final TextStyle? style;
   final TextStyle? rubyStyle;
+  final GestureTapCallback? onTap;
   final TextDirection textDirection;
 
   @override
@@ -22,6 +24,7 @@ class RubyTextData extends Equatable {
         ruby,
         style,
         rubyStyle,
+        onTap,
         textDirection,
       ];
 
@@ -30,6 +33,7 @@ class RubyTextData extends Equatable {
     String? ruby,
     TextStyle? style,
     TextStyle? rubyStyle,
+    GestureTapCallback? onTap,
     TextDirection? textDirection,
   }) =>
       RubyTextData(
@@ -37,6 +41,7 @@ class RubyTextData extends Equatable {
         ruby: ruby ?? this.ruby,
         style: style ?? this.style,
         rubyStyle: rubyStyle ?? this.rubyStyle,
+        onTap: onTap ?? this.onTap,
         textDirection: textDirection ?? this.textDirection,
       );
 }
