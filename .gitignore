@@ -46,6 +46,13 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Sudachi.rs
+**/target
+**/*.rs.bk
+README*.html
+sudachi.rs/resources/sudachidict.zip
+sudachi.rs/resources/system.dic
+
 db/*
 !db/.keep
 database_build/jisho/*

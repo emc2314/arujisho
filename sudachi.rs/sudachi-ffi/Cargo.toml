@@ -1,0 +1,12 @@
+[package]
+name = "sudachi-ffi"
+version = "0.0.1"
+edition = "2018"
+
+[dependencies]
+sudachi = { path = "../sudachi" }
+flutter_rust_bridge = "1"
+
+[lib]
+name = "sudachi_ffi"
+crate-type = ["staticlib","cdylib"]

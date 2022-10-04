@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "sudachi",
+    "sudachi-cli",
+    "sudachi-ffi",
+    "plugin/input_text/*",
+    "plugin/oov/*",
+    "plugin/path_rewrite/*",
+]
+
+default-members = [
+    "sudachi",
+    "sudachi-ffi"
+]

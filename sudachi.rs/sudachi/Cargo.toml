@@ -1,0 +1,41 @@
+[package]
+name = "sudachi"
+version = "0.6.7-a1"
+authors = ["Works Applications <sudachi@worksap.co.jp>"]
+edition = "2018"
+description = "Rust version of Sudachi, the Japanese Morphological Analyzer"
+readme = "README.md"
+homepage = "https://github.com/WorksApplications/sudachi.rs"
+repository = "https://github.com/WorksApplications/sudachi.rs"
+license = "Apache-2.0"
+
+[dependencies] # this should be sorted
+aho-corasick = "0.7" # MIT/Apache 2.0
+bitflags = "1.3" # MIT/Apache 2.0
+csv = "1.1" # Unilicense/MIT
+fancy-regex = "0.10" # MIT
+indexmap = "1.7" # MIT/Apache 2.0
+itertools = "0.10" # MIT/Apachie 2.0
+lazy_static = "1.4" # MIT/Apache 2.0
+libloading = "0.7" # ISC (MIT-compatible)
+nom = "7" # MIT
+memmap2 = "0.5" # MIT/Apache 2.0
+regex = "1" # MIT/Apache 2.0
+serde = { version = "1.0", features = ["derive"] } # MIT/Apache 2.0
+serde_json = "1.0" # MIT/Apache 2.0
+thiserror = "1.0" # MIT/Apache 2.0
+unicode-normalization = "0.1" # MIT/Apache 2.0
+yada = "0.5" # MIT/Apache 2.0
+
+[dev-dependencies]
+claim = "0.5" # MIT/Apache 2.0
+tempfile = "3" # MIT/Apache 2.0
+
+# Plugins for tests
+default_input_text = { path = "../plugin/input_text/default_input_text" }
+simple_oov = { path = "../plugin/oov/simple_oov" }
+join_numeric = { path = "../plugin/path_rewrite/join_numeric" }
+join_katakana_oov = { path = "../plugin/path_rewrite/join_katakana_oov" }
+
+[lib]
+crate-type = ["rlib"]
