@@ -49,6 +49,8 @@ dependencies:
   crypto: ^3.0.2
   ffi: ^2.0.1
   flutter_rust_bridge: ^1.48.1
+  ruby_text: ^3.0.1
+  expandable: ^5.0.1
 
 dev_dependencies:
   flutter_test:
@@ -107,6 +109,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  fonts:
+    - family: NotoSansJP
+      fonts:
+        - asset: fonts/NotoSansJP-Regular.otf
+        - asset: fonts/NotoSansJP-Bold.otf
+          weight: 700
 
 flutter_icons:
   android: true

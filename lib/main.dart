@@ -16,6 +16,8 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:bootstrap_icons/bootstrap_icons.dart';
 import 'package:icofont_flutter/icofont_flutter.dart';
+import 'package:expandable/expandable.dart';
+import 'package:ruby_text/ruby_text.dart';
 
 import 'package:arujisho/splash_screen.dart';
 import 'package:arujisho/ffi.io.dart';
@@ -24,6 +26,7 @@ void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   static const isRelease = true;
+
   const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
@@ -32,15 +35,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
         title: 'ある辞書',
         theme: isRelease
-            ? ThemeData(
-                primarySwatch: Colors.blue,
-              )
+            ? ThemeData(primarySwatch: Colors.blue, fontFamily: "NotoSansJP")
             : ThemeData(
                 colorScheme: ColorScheme.fromSwatch().copyWith(
                   primary: Colors.pink[300],
                   secondary: Colors.pinkAccent[100],
                 ),
-              ),
+                fontFamily: "NotoSansJP"),
         initialRoute: '/splash',
         routes: {
           '/': (context) => const MyHomePage(),
@@ -104,6 +105,151 @@ class _InfiniteListState<T> extends State<InfiniteList<T>> {
   }
 }
 
+class DictionaryTerm extends StatefulWidget {
+  final String dictName;
+  final String imi;
+
+  const DictionaryTerm({Key? key, required this.dictName, required this.imi})
+      : super(key: key);
+
+  @override
+  _DictionaryTermState createState() => _DictionaryTermState();
+}
+
+class _DictionaryTermState extends State<DictionaryTerm> {
+  final ExpandableController _expandControl = ExpandableController(
+    initialExpanded: true,
+  );
+  List<List<Map<String, String>>>? tokens;
+  bool showFurigana = false;
+  static const _kanaKit = KanaKit();
+
+  _doMorphAnalyze() async {
+    String sp = Path.join(
+        (await getApplicationSupportDirectory()).path, "sudachi.json");
+    List<List<Map<String, String>>> t = [];
+    for (String row in widget.imi.split('\n')) {
+      if (row.isNotEmpty) {
+        List<Map<String, String>> tt = [];
+        if (!_kanaKit.isRomaji(row)) {
+          var lls = await sudachiAPI.parse(data: row, configPath: sp);
+          for (var token in lls) {
+            var j = {
+              "begin": token[0],
+              "end": token[1],
+              "POS": token[2],
+              "surface": token[3],
+              "dform": token[4],
+              "reading": _kanaKit.toHiragana(token[5])
+            };
+            tt.add(j);
+          }
+        } else {
+          tt.add({
+            "begin": '0',
+            "end": (row.length - 1).toString(),
+            "POS": "",
+            "surface": row,
+            "dform": ""
+          });
+        }
+        t.add(tt);
+      }
+    }
+    setState(() {
+      tokens = t;
+    });
+  }
+
+  _switchFurigana() async {
+    if (tokens == null) {
+      _doMorphAnalyze();
+    }
+    setState(() {
+      showFurigana = !showFurigana;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 0,
+        bottom: 10,
+      ),
+      child: ExpandablePanel(
+        theme: ExpandableThemeData(
+          iconPadding: EdgeInsets.zero,
+          iconSize: Theme.of(context).textTheme.titleLarge?.fontSize,
+          expandIcon: Icons.arrow_drop_down,
+          collapseIcon: Icons.arrow_drop_up,
+          iconColor: Theme.of(context).unselectedWidgetColor,
+          headerAlignment: ExpandablePanelHeaderAlignment.center,
+        ),
+        controller: _expandControl,
+        header: Wrap(children: [
+          InkWell(
+              child: Container(
+                  decoration: BoxDecoration(
+                      color:
+                          MyApp.isRelease ? Colors.red[600] : Colors.blue[400],
+                      borderRadius: const BorderRadius.all(Radius.circular(4))),
+                  child: Padding(
+                      padding: const EdgeInsets.fromLTRB(5, 0, 5, 0),
+                      child: Text(
+                        widget.dictName,
+                        style: const TextStyle(color: Colors.white),
+                      ))),
+              onTap: () {
+                _switchFurigana();
+              })
+        ]),
+        collapsed: const SizedBox.shrink(),
+        expanded: Padding(
+            padding: const EdgeInsets.only(
+              top: 5,
+              left: 10,
+            ),
+            child: showFurigana
+                ? tokens == null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Text("データを処理しています。少々お待ちください。",
+                                style: TextStyle(
+                                  color: MyApp.isRelease
+                                      ? Colors.red[600]
+                                      : Colors.blue[400],
+                                )),
+                            SelectableText(widget.imi,
+                                style: const TextStyle(fontSize: 12),
+                                toolbarOptions: const ToolbarOptions(
+                                    copy: true, selectAll: false)),
+                          ])
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: tokens!
+                            .map<RubyText>((sentence) =>
+                                RubyText(sentence.map<RubyTextData>((token) {
+                                  if (token['POS']!.contains('記号') ||
+                                      token['POS']!.contains('空白') ||
+                                      _kanaKit.isKana(token['surface']!) ||
+                                      _kanaKit.isRomaji(token['surface']!)) {
+                                    return RubyTextData(token['surface']!);
+                                  }
+                                  return RubyTextData(token['surface']!,
+                                      ruby: token['reading']);
+                                }).toList()))
+                            .toList())
+                : SelectableText(widget.imi,
+                    style: const TextStyle(fontSize: 12),
+                    toolbarOptions:
+                        const ToolbarOptions(copy: true, selectAll: false))),
+      ),
+    );
+  }
+}
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
 
@@ -144,9 +290,6 @@ class _MyHomePageState extends State<MyHomePage> {
     s = s.replaceAll("\\ph", "\\p{Hiragana}");
     s = s.replaceAll("\\pk", "\\p{Katakana}");
     //s = t.evaluate('cj_convert(${json.encode(s)})').stringResult;
-    String sp = Path.join(
-        (await getApplicationSupportDirectory()).path, "sudachi.json");
-    print(await sudachiAPI.parse(data: s, configPath: sp));
     _streamController.add(s);
   }
 
@@ -545,36 +688,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                 subtitle: Text("${item['yomikata']} "
                                     "$pitchData"),
                                 children: imi.keys
-                                    .map<List<Widget>>((s) =>
-                                        <Widget>[
-                                          Container(
-                                              decoration: BoxDecoration(
-                                                  color: MyApp.isRelease
-                                                      ? Colors.red[600]
-                                                      : Colors.blue[400],
-                                                  borderRadius:
-                                                      const BorderRadius.all(
-                                                          Radius.circular(20))),
-                                              child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.fromLTRB(
-                                                          5, 0, 5, 0),
-                                                  child: Text(
-                                                    s,
-                                                    style: const TextStyle(
-                                                        color: Colors.white),
-                                                  ))),
-                                        ] +
-                                        List<List<Widget>>.from(imi[s].map((simi) => <Widget>[
-                                              ListTile(
-                                                  title: SelectableText(simi,
-                                                      toolbarOptions:
-                                                          const ToolbarOptions(
-                                                              copy: true,
-                                                              selectAll:
-                                                                  false))),
-                                              const Divider(color: Colors.grey),
-                                            ])).reduce((a, b) => a + b))
+                                    .map<List<Widget>>((s) => List<List<Widget>>.from(imi[s].map((simi) => <Widget>[
+                                          DictionaryTerm(
+                                            dictName: s,
+                                            imi: simi,
+                                          ),
+                                        ])).reduce((a, b) => a + b))
                                     .reduce((a, b) => a + b),
                                 onExpansionChanged: (expanded) {
                                   FocusManager.instance.primaryFocus?.unfocus();

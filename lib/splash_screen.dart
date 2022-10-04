@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
     _initAppData();
   }
 
-  void _unZip(String bundlePath, Directory destDir) async {
+  Future<bool> _unZip(String bundlePath, Directory destDir) async {
     try {
       await destDir.create(recursive: true);
     } catch (_) {}
@@ -52,8 +52,11 @@ class _SplashScreenState extends State<SplashScreen> {
         zipFile: zipFile,
         destinationDir: destDir,
       );
-    } catch (_) {}
+    } catch (_) {
+      return false;
+    }
     zipFile.deleteSync();
+    return true;
   }
 
   void _initAppData() async {
@@ -64,9 +67,9 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!exists) {
       _controller.play();
       var f = Future.delayed(const Duration(seconds: 8));
-      _unZip("sudachi.rs/resources/sudachidict.zip",
+      await _unZip("sudachi.rs/resources/sudachidict.zip",
           await getApplicationSupportDirectory());
-      _unZip("db/arujisho.db.zip", Directory(Path.dirname(dbPath)));
+      await _unZip("db/arujisho.db.zip", Directory(Path.dirname(dbPath)));
       await f;
     }
 
