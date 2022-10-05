@@ -20,6 +20,7 @@ import 'package:expandable/expandable.dart';
 
 import 'package:arujisho/splash_screen.dart';
 import 'package:arujisho/ffi.io.dart';
+import 'package:arujisho/cjconvert.dart';
 import 'package:arujisho/ruby_text/ruby_text.dart';
 import 'package:arujisho/ruby_text/ruby_text_data.dart';
 
@@ -288,7 +289,10 @@ class _MyHomePageState extends State<MyHomePage> {
     s = s.replaceAll("\\pc", "\\p{Han}");
     s = s.replaceAll("\\ph", "\\p{Hiragana}");
     s = s.replaceAll("\\pk", "\\p{Katakana}");
-    //s = t.evaluate('cj_convert(${json.encode(s)})').stringResult;
+    s = s
+        .split('')
+        .map<String>((c) => (cjdc.containsKey(c) ? cjdc[c]! : c))
+        .join();
     _streamController.add(s);
   }
 
