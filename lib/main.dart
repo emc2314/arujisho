@@ -280,7 +280,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _streamController.add(null);
       return;
     }
-    if (_history.last != _controller.text) {
+    if (_history.isEmpty || _history.last != _controller.text) {
       _history.add(_controller.text);
     }
     _searchMode = mode;
@@ -508,7 +508,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         });
                                       },
                                       decoration: const InputDecoration(
-                                          hintText: "基準頻度（正整数）"),
+                                          hintText: "頻度ランク（正整数）"),
                                     ),
                                   );
                                 }),
@@ -686,7 +686,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                     ? const Icon(Icons.error_outline)
                                                     : const Icon(IcoFontIcons.soundWaveAlt),
                                                 onPressed: () => _hatsuon(item)))
-                                    : Text(item['freqRank'].toString()),
+                                    : Text((item['freqRank'] + 1).toString()),
                                 subtitle: Text("${item['yomikata']} "
                                     "$pitchData"),
                                 children: imi.keys

@@ -4,7 +4,7 @@
 
 日本語辞書です
 
-<img src="https://user-images.githubusercontent.com/14357110/180193393-b4178547-ada3-4fe8-bcbb-28ce752cdd46.png" width="300">
+<img src="example.gif">
 
 ## Features
 - Import and merge multiple Japanese dictionaries used by yomichan
