@@ -21,4 +21,3 @@
 - use sliding instead of back when switching between different queries
 - ios REGEX
 - full-width/half-width
-- Sudachi Optimization

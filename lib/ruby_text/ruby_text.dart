@@ -93,7 +93,7 @@ class RubySpanWidget extends HookWidget {
     texts.add(
       Text(
         data.text,
-        textAlign: TextAlign.center,
+        textAlign: TextAlign.left,
         style: effectiveTextStyle,
       ),
     );
@@ -107,7 +107,7 @@ class RubySpanWidget extends HookWidget {
             child: Column(children: [
               texts[0],
               Container(
-                  margin: const EdgeInsets.only(left: 2, right: 2),
+                  margin: const EdgeInsets.only(left: 1.5, right: 1.5),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.all(Radius.circular(2)),

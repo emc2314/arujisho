@@ -199,7 +199,9 @@ class _DictionaryTermState extends State<DictionaryTerm> {
               child: Container(
                   decoration: BoxDecoration(
                       color:
-                          MyApp.isRelease ? Colors.red[600] : Colors.blue[400],
+                          (MyApp.isRelease ^ (showFurigana && tokens == null))
+                              ? Colors.red[600]
+                              : Colors.blue[400],
                       borderRadius: const BorderRadius.all(Radius.circular(4))),
                   child: Padding(
                       padding: const EdgeInsets.fromLTRB(5, 0, 5, 0),
@@ -215,44 +217,29 @@ class _DictionaryTermState extends State<DictionaryTerm> {
               left: 10,
               bottom: 4,
             ),
-            child: showFurigana
-                ? tokens == null
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                            Text("データを処理しています。少々お待ちください。",
-                                style: TextStyle(
-                                  color: MyApp.isRelease
-                                      ? Colors.red[600]
-                                      : Colors.blue[400],
-                                )),
-                            SelectableText(widget.imi,
-                                style: const TextStyle(fontSize: 12),
-                                toolbarOptions: const ToolbarOptions(
-                                    copy: true, selectAll: false)),
-                          ])
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: tokens!
-                            .map<RubyText>((sentence) =>
-                                RubyText(sentence.map<RubyTextData>((token) {
-                                  if (token['POS']!.contains('記号') ||
-                                      token['POS']!.contains('空白') ||
-                                      _kanaKit.isRomaji(token['surface']!)) {
-                                    return RubyTextData(token['surface']!);
-                                  } else if (_kanaKit
-                                      .isKana(token['surface']!)) {
-                                    return RubyTextData(token['surface']!,
-                                        onTap: () {
-                                      widget.queryWord(token['dform']!);
-                                    });
-                                  }
-                                  return RubyTextData(token['surface']!,
-                                      ruby: token['reading'], onTap: () {
-                                    widget.queryWord(token['dform']!);
-                                  });
-                                }).toList()))
-                            .toList())
+            child: showFurigana && tokens != null
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: tokens!
+                        .map<RubyText>((sentence) => RubyText(
+                            style: const TextStyle(fontSize: 13.5),
+                            sentence.map<RubyTextData>((token) {
+                              if (token['POS']!.contains('記号') ||
+                                  token['POS']!.contains('空白') ||
+                                  _kanaKit.isRomaji(token['surface']!)) {
+                                return RubyTextData(token['surface']!);
+                              } else if (_kanaKit.isKana(token['surface']!)) {
+                                return RubyTextData(token['surface']!,
+                                    onTap: () {
+                                  widget.queryWord(token['dform']!);
+                                });
+                              }
+                              return RubyTextData(token['surface']!,
+                                  ruby: token['reading'], onTap: () {
+                                widget.queryWord(token['dform']!);
+                              });
+                            }).toList()))
+                        .toList())
                 : SelectableText(widget.imi,
                     style: const TextStyle(fontSize: 12),
                     toolbarOptions:
@@ -453,6 +440,9 @@ class _MyHomePageState extends State<MyHomePage> {
     return WillPopScope(
         onWillPop: () async {
           if (_history.isEmpty) return true;
+          while (_history.last == _controller.text && _history.length > 1) {
+            _history.removeLast();
+          }
           String temp = _history.last;
           _history.removeLast();
           _setSearchContent(temp);
@@ -702,8 +692,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 children: imi.keys
                                     .map<List<Widget>>((s) => List<List<Widget>>.from(imi[s].map((simi) => <Widget>[
                                           DictionaryTerm(
-                                            dictName: s,
-                                            imi: simi,
+                                              dictName: s,
+                                              imi: simi,
                                               queryWord: _setSearchContent),
                                         ])).reduce((a, b) => a + b))
                                     .reduce((a, b) => a + b),

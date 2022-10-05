@@ -1,9 +1,10 @@
 use std::ops::Deref;
 use std::path::PathBuf;
+use std::sync::Once;
+
 use sudachi::analysis::stateful_tokenizer::StatefulTokenizer;
 use sudachi::config::Config;
 use sudachi::dic::dictionary::JapaneseDictionary;
-use sudachi::dic::subset::InfoSubset;
 use sudachi::prelude::*;
 
 #[allow(unused)]
@@ -73,17 +74,31 @@ fn consume_mlist<'a, 'b: 'a>(
     }
 }
 
+static START: Once = Once::new();
+
 pub fn parse(data: String, config_path: String) -> Vec<Vec<String>> {
-    let cfg = Config::new(Some(PathBuf::from(config_path)), None, None).unwrap();
-    let ana = JapaneseDictionary::from_cfg(&cfg).unwrap();
+    static mut CFG: Option<Config> = None;
+    static mut ANA: Option<JapaneseDictionary> = None;
+    static mut ST: Option<StatefulTokenizer<&JapaneseDictionary>> = None;
+    unsafe {
+        START.call_once(|| {
+            CFG = Some(Config::new(Some(PathBuf::from(config_path)), None, None).unwrap());
+            ANA = Some(JapaneseDictionary::from_cfg(&CFG.as_ref().unwrap()).unwrap());
+            ST = Some(StatefulTokenizer::create(
+                &ANA.as_ref().unwrap(),
+                false,
+                Mode::B,
+            ));
+        });
+        ST.as_mut().unwrap().reset().push_str(&data);
+        ST.as_mut().unwrap().do_tokenize().unwrap();
+    }
 
-    let mut st = StatefulTokenizer::create(&ana, false, Mode::B);
-    let mut mlist = MorphemeList::empty(&ana);
-
-    st.set_subset(InfoSubset::default());
-    st.reset().push_str(&data);
-    st.do_tokenize().unwrap();
-    mlist.collect_results(&mut st).unwrap();
+    let mlist = unsafe {
+        let mut mlist = MorphemeList::empty(ANA.as_ref().unwrap());
+        mlist.collect_results(ST.as_mut().unwrap()).unwrap();
+        mlist
+    };
 
     let mut vecr = Vec::new();
     for i in 0..mlist.len() {
