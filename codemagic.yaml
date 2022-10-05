@@ -34,9 +34,19 @@ workflows:
         echo "flutter.sdk=$HOME/programs/flutter" > "$FCI_BUILD_DIR/android/local.properties"
       - flutter packages pub get
       - |
-        #!/bin/sh
+        # fetch db and sudachi.rs dict
         wget https://jp.xydustc.me/f/arujisho.db.zip -O db/arujisho.db.zip
-      - flutter build apk --release
+        cd sudachi.rs
+        sh prepare_diczip.sh
+        cd ..
+      - |
+        # install rust
+        brew install rustup
+        rustup-init -y
+        source "$HOME/.cargo/env"
+        rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android aarch64-apple-ios
+        cargo install cargo-ndk
+        flutter build apk --release
       - find . -name "Podfile" -execdir pod install \;
       - flutter build ios --release --no-codesign
       - |
