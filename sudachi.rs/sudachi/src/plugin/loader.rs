@@ -72,6 +72,10 @@ fn make_system_specific_name(s: &str) -> String {
     format!("lib{}.dylib", s)
 }
 
+#[cfg(target_os = "ios")]
+fn make_system_specific_name(s: &str) -> String {
+    format!("lib{}.dylib", s)
+}
 fn system_specific_name(s: &str) -> Option<String> {
     if s.contains('.') {
         None

@@ -46,9 +46,15 @@ workflows:
         source "$HOME/.cargo/env"
         rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android aarch64-apple-ios
         cargo install cargo-ndk
+      - |
+        # build Android
+        source "$HOME/.cargo/env"
         flutter build apk --release
-      - find . -name "Podfile" -execdir pod install \;
-      - flutter build ios --release --no-codesign
+      - |
+        # build iOS
+        source "$HOME/.cargo/env"
+        find . -name "Podfile" -execdir pod install \;
+        flutter build ios --release --no-codesign
       - |
         #!/bin/sh
         mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/arujisho.apk
@@ -71,6 +77,7 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
+      - sed -i'.bak' -e 's/isRelease = true/isRelease = false/g' lib/main.dart
       - |
         # set up debug keystore
         rm -f ~/.android/debug.keystore
@@ -88,19 +95,34 @@ workflows:
         echo "flutter.sdk=$HOME/programs/flutter" > "$FCI_BUILD_DIR/android/local.properties"
       - flutter packages pub get
       - |
-        #!/bin/sh
+        # fetch db and sudachi.rs dict
         wget https://jp.xydustc.me/f/arujisho.db.zip -O db/arujisho.db.zip
-        sed -i'.bak' -e 's/isRelease = true/isRelease = false/g' lib/main.dart
-      - flutter build apk --release
-      - find . -name "Podfile" -execdir pod install \;
-      - flutter build ios --release --no-codesign
+        cd sudachi.rs
+        sh prepare_diczip.sh
+        cd ..
+      - |
+        # install rust
+        brew install rustup
+        rustup-init -y
+        source "$HOME/.cargo/env"
+        rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android aarch64-apple-ios
+        cargo install cargo-ndk
+      - |
+        # build Android
+        source "$HOME/.cargo/env"
+        flutter build apk --release
+      - |
+        # build iOS
+        source "$HOME/.cargo/env"
+        find . -name "Podfile" -execdir pod install \;
+        flutter build ios --release --no-codesign
       - |
         #!/bin/sh
         mv build/app/outputs/apk/release/app-release.apk build/app/outputs/apk/release/arujisho.apk
         mkdir -p Payload
         mkdir -p build/ios/ipa
         mv ./build/ios/iphoneos/Runner.app Payload
-        zip -r -y -0 Payload.zip Payload/Runner.app
+        zip -r -y -3 Payload.zip Payload/Runner.app
         mv Payload.zip build/ios/ipa/arujisho.ipa
     artifacts:
       - build/**/outputs/apk/**/*.apk
