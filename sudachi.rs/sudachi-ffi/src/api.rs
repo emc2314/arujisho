@@ -108,7 +108,7 @@ pub fn parse(data: String, config_path: String) -> Vec<Vec<String>> {
             m.end_c().to_string(),
             m.part_of_speech().deref()[0].clone(),
             String::from(m.surface().deref()),
-            String::from(m.dictionary_form()),
+            String::from(m.normalized_form()),
             String::from(m.reading_form()),
         ];
         vecr.push(winfo.to_vec());

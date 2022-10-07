@@ -9,7 +9,7 @@
 	    { "class": "com.worksap.nlp.sudachi.IgnoreYomiganaPlugin",
           "leftBrackets": ["(", "（"],
           "rightBrackets": [")", "）"],
-          "maxYomiganaLength": 4}
+          "maxYomiganaLength": 8}
     ],
     "oovProviderPlugin" : [
         { "class" : "com.worksap.nlp.sudachi.MeCabOovPlugin",

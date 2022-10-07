@@ -146,7 +146,7 @@ class _DictionaryTermState extends State<DictionaryTerm> {
               "end": token[1],
               "POS": token[2],
               "surface": token[3],
-              "dform": token[4],
+              "norm": token[4],
               "reading": _kanaKit.toHiragana(token[5])
             };
             tt.add(j);
@@ -157,7 +157,7 @@ class _DictionaryTermState extends State<DictionaryTerm> {
             "end": (row.length - 1).toString(),
             "POS": "",
             "surface": row,
-            "dform": ""
+            "norm": ""
           });
         }
         t.add(tt);
@@ -232,12 +232,12 @@ class _DictionaryTermState extends State<DictionaryTerm> {
                               } else if (_kanaKit.isKana(token['surface']!)) {
                                 return RubyTextData(token['surface']!,
                                     onTap: () {
-                                  widget.queryWord(token['dform']!);
+                                  widget.queryWord(token['norm']!);
                                 });
                               }
                               return RubyTextData(token['surface']!,
                                   ruby: token['reading'], onTap: () {
-                                widget.queryWord(token['dform']!);
+                                widget.queryWord(token['norm']!);
                               });
                             }).toList()))
                         .toList())
@@ -594,7 +594,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                           _searchMode == 0
                                       ? 100
                                       : 500) *
-                                  pow(item['yomikata'].length / bLen,
+                                  pow(1.5 + item['yomikata'].length / bLen,
                                       _searchMode == 0 ? 2.5 : 0))
                               .round();
                         }
