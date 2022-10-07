@@ -23,6 +23,5 @@
   - refactor code
   - use sliding to switch between history pages
 - optimize furigana display
-- fix audio download failed case
 - ios REGEX
 - full-width/half-width unification

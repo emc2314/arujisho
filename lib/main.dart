@@ -344,11 +344,15 @@ class _MyHomePageState extends State<MyHomePage> {
               setState(() {
                 item['loading'] = true;
               });
-              var file = await DefaultCacheManager()
-                  .getSingleFile(url, headers: burpHeader);
-              var hash = await sha256.bind(file.openRead()).first;
-              if (hash.toString() ==
-                  'ae6398b5a27bc8c0a771df6c907ade794be15518174773c58c7c7ddd17098906') {
+              try {
+                var file = await DefaultCacheManager()
+                    .getSingleFile(url, headers: burpHeader);
+                var hash = await sha256.bind(file.openRead()).first;
+                if (hash.toString() ==
+                    'ae6398b5a27bc8c0a771df6c907ade794be15518174773c58c7c7ddd17098906') {
+                  throw const FormatException("NOT IMPLEMENTED");
+                }
+              } catch (_) {
                 url = audio.getElementsByTagName('source')[0].attributes['src'];
               }
               break;
@@ -383,7 +387,9 @@ class _MyHomePageState extends State<MyHomePage> {
           match = utf8.decode(base64.decode(match!));
           url = 'https://audio00.forvo.com/ogg/$match';
         }
-      } catch (_) {}
+      } catch (_) {
+        url = null;
+      }
     }
     if (url != null && url.isNotEmpty) {
       setState(() {
@@ -395,7 +401,9 @@ class _MyHomePageState extends State<MyHomePage> {
             await DefaultCacheManager().getSingleFile(url, headers: burpHeader);
         await player.setFilePath(file.path);
         player.play();
-      } catch (_) {}
+      } catch (_) {
+        url = null;
+      }
     }
     setState(() {
       _hatsuonCache[item['idex']] = url;
