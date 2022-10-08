@@ -545,7 +545,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                     }
                     Future<List<Map>> queryAuto(int nextIndex) async {
-                      const pageSize = 35;
+                      const pageSize = 18;
                       if (nextIndex % pageSize != 0) {
                         return [];
                       }
@@ -574,7 +574,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             'WHERE ($searchField MATCH "${snapshot.data}*" OR r$searchField '
                             'MATCH "${String.fromCharCodes(snapshot.data.runes.toList().reversed)}*") '
                             '${(_searchMode > 0 ? "AND _rowid_ >= $_searchMode" : "")} '
-                            'ORDER BY _rowid_ LIMIT $nextIndex, $pageSize'
+                            'ORDER BY _rowid_ LIMIT $nextIndex, ${2*pageSize}'
                             ') AS tt ON tt.idex=imis._rowid_)',
                           ));
                         } else {
